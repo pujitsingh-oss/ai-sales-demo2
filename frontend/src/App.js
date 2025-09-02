@@ -117,6 +117,51 @@ function App() {
     setIsRecording(false);
   };
 
+  const startPracticeRecording = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      toast.error('Speech recognition not supported in this browser');
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    practiceRecognitionRef.current = new SpeechRecognition();
+    
+    practiceRecognitionRef.current.continuous = true;
+    practiceRecognitionRef.current.interimResults = true;
+    practiceRecognitionRef.current.lang = 'en-US'; // Default to English for practice
+
+    practiceRecognitionRef.current.onstart = () => {
+      setPracticeIsRecording(true);
+      toast.success('Recording started...');
+    };
+
+    practiceRecognitionRef.current.onresult = (event) => {
+      const current = event.resultIndex;
+      const transcript = event.results[current][0].transcript;
+      setPracticeRecordedText(transcript);
+      setPracticeResponse(transcript); // Also update the main response field
+    };
+
+    practiceRecognitionRef.current.onerror = (event) => {
+      console.error('Practice speech recognition error', event.error);
+      toast.error('Recording error: ' + event.error);
+      setPracticeIsRecording(false);
+    };
+
+    practiceRecognitionRef.current.onend = () => {
+      setPracticeIsRecording(false);
+    };
+
+    practiceRecognitionRef.current.start();
+  };
+
+  const stopPracticeRecording = () => {
+    if (practiceRecognitionRef.current) {
+      practiceRecognitionRef.current.stop();
+    }
+    setPracticeIsRecording(false);
+  };
+
   const getLanguageCode = (language) => {
     const langCodes = {
       'English': 'en-US',
