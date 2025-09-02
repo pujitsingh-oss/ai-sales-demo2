@@ -204,82 +204,71 @@ async def get_practice_feedback(response: PracticeResponse):
         if not scenario:
             raise HTTPException(status_code=404, detail="Scenario not found")
         
-        # Initialize Gemini chat
+        # Initialize Gemini chat with concise feedback system
         chat = LlmChat(
             api_key=os.environ.get('GEMINI_API_KEY'),
             session_id=f"practice_{uuid.uuid4()}",
-            system_message="""You are an expert sales trainer evaluating a sales agent's response to a merchant objection.
+            system_message="""You are a sales trainer providing concise feedback on practice responses.
+
+            FEEDBACK FORMAT:
+            1. Keep feedback under 150 words
+            2. Be encouraging but honest
+            3. Provide specific, actionable suggestions
+            4. Rate responses 1-10 based on effectiveness
             
-            Your role is to:
-            1. Evaluate the effectiveness of the agent's response
-            2. Provide constructive feedback
-            3. Suggest improvements
-            4. Rate the response on a scale of 1-10
-            5. Be encouraging while being honest about areas for improvement
-            
-            Focus on:
-            - Empathy and understanding shown
-            - Clarity of communication
-            - Addressing the core concern
-            - Professional tone
-            - Practical applicability
-            """
+            Structure:
+            **Score:** [X/10]
+            **What worked:** [1-2 strengths]
+            **Improve:** [2-3 specific suggestions]"""
         ).with_model("gemini", "gemini-2.5-pro")
         
-        prompt = f"""
-        Scenario: {scenario["objection"]}
+        prompt = f"""Objection: "{scenario["objection"]}"
         Context: {scenario["context"]}
-        Expected Approach: {scenario["suggested_response"]}
+        Expected approach: {scenario["suggested_response"]}
         
-        Agent's Response: "{response.user_response}"
-        Response Type: {response.response_type}
+        Agent's response: "{response.user_response}"
         
-        Please evaluate this response and provide:
-        1. Overall feedback (2-3 sentences)
-        2. A score from 1-10
-        3. 2-3 specific suggestions for improvement
-        
-        Format your response as:
-        FEEDBACK: [your feedback]
-        SCORE: [number 1-10]
-        SUGGESTIONS:
-        - [suggestion 1]
-        - [suggestion 2]
-        - [suggestion 3]
-        """
+        Provide brief, actionable feedback with a score 1-10."""
         
         user_message = UserMessage(text=prompt)
         ai_response = await chat.send_message(user_message)
         
-        # Parse the AI response
+        # Parse the AI response more reliably
         lines = ai_response.strip().split('\n')
         feedback_text = ""
-        score = None
+        score = 7  # default score
         suggestions = []
         
-        current_section = None
+        # Extract score if present
+        for line in lines:
+            if "score:" in line.lower() or "/10" in line:
+                try:
+                    import re
+                    score_match = re.search(r'(\d+)(?:/10)?', line)
+                    if score_match:
+                        score = int(score_match.group(1))
+                        score = min(10, max(1, score))  # Ensure score is 1-10
+                except:
+                    score = 7
+                break
+        
+        # Use full response as feedback if parsing fails
+        feedback_text = ai_response
+        
+        # Extract suggestions if present
+        in_suggestions = False
         for line in lines:
             line = line.strip()
-            if line.startswith("FEEDBACK:"):
-                feedback_text = line.replace("FEEDBACK:", "").strip()
-                current_section = "feedback"
-            elif line.startswith("SCORE:"):
-                try:
-                    score = int(line.replace("SCORE:", "").strip())
-                except:
-                    score = 5
-                current_section = "score"
-            elif line.startswith("SUGGESTIONS:"):
-                current_section = "suggestions"
-            elif line.startswith("-") and current_section == "suggestions":
-                suggestions.append(line.replace("-", "").strip())
-            elif current_section == "feedback" and line:
-                feedback_text += " " + line
+            if "improve:" in line.lower() or "suggestions:" in line.lower():
+                in_suggestions = True
+                continue
+            if in_suggestions and line.startswith(("-", "•", "1.", "2.", "3.")):
+                suggestions.append(line.lstrip("-•123456789. "))
         
         return PracticeFeedback(
-            feedback=feedback_text if feedback_text else ai_response,
+            feedback=feedback_text,
             score=score,
-            suggestions=suggestions
+            suggestions=suggestions[:3]  # Limit to 3 suggestions
         )
         
     except Exception as e:
