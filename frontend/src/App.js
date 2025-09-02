@@ -177,22 +177,23 @@ function App() {
   };
 
   const handleObjection = async (objectionText, scenarioId = null) => {
-    if (!objectionText.trim()) {
+    if (!objectionText || !objectionText.trim()) {
       toast.error('Please provide an objection text');
       return;
     }
 
     setLoading(true);
+    setAiResponse(''); // Clear previous response
     try {
       const response = await axios.post(`${API}/objection/handle`, {
-        objection_text: objectionText,
+        objection_text: objectionText.trim(),
         language: selectedLanguage,
         scenario_id: scenarioId
       });
       setAiResponse(response.data.response);
       toast.success('AI response generated!');
     } catch (error) {
-      toast.error('Failed to get AI response');
+      toast.error('Failed to get AI response: ' + (error.response?.data?.detail || error.message));
       console.error(error);
     } finally {
       setLoading(false);
