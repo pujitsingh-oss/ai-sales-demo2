@@ -420,11 +420,17 @@ function App() {
                 
                 <TabsContent value="preset" className="space-y-4">
                   <Select 
+                    key={`scenario-select-${Date.now()}`}
                     value={selectedScenario?.id?.toString() || ''} 
                     onValueChange={(value) => {
+                      console.log('Dropdown changed to value:', value);
                       const scenario = scenarios.find(s => s.id === parseInt(value));
+                      console.log('Found scenario:', scenario);
                       setSelectedScenario(scenario);
-                      console.log('Selected scenario:', scenario); // Debug log
+                      // Force a re-render by updating state immediately
+                      setTimeout(() => {
+                        console.log('Updated selectedScenario state:', scenario);
+                      }, 100);
                     }}
                   >
                     <SelectTrigger>
