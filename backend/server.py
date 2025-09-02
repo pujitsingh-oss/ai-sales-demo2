@@ -144,44 +144,45 @@ async def get_practice_scenarios():
 async def handle_objection(request: ObjectionRequest):
     """Handle merchant objection and provide AI-generated response"""
     try:
-        # Initialize Gemini chat
-        chat = LlmChat(
-            api_key=os.environ.get('GEMINI_API_KEY'),
-            session_id=f"objection_{uuid.uuid4()}",
-            system_message="""You are an expert sales trainer helping frontline sales agents handle merchant objections. 
-            Your role is to provide practical, empathetic, and effective responses to help agents convert merchant objections into opportunities.
-            
-            When given a merchant objection:
-            1. Acknowledge the merchant's concern
-            2. Provide a clear, professional response strategy
-            3. Include specific phrases or approaches the agent can use
-            4. Keep responses conversational and natural
-            5. Adapt language style to match the input (if Hindi/regional language, respond accordingly)
-            
-            Be supportive and practical, focusing on real-world applicability."""
-        ).with_model("gemini", "gemini-2.5-pro")
-        
         # Find matching scenario if scenario_id provided
         scenario_used = None
         if request.scenario_id:
             scenario_used = next((s for s in DEMO_SCENARIOS if s["id"] == request.scenario_id), None)
         
-        # Create prompt for AI
-        prompt = f"""
-        Merchant Objection: "{request.objection_text}"
-        Language Context: {request.language}
+        # Create language-specific system message
+        language_instruction = ""
+        if request.language in ["Hindi", "Hinglish"]:
+            language_instruction = "Respond in Hindi/Hinglish mixing as appropriate for the input language."
+        elif request.language in ["Marathi", "Kannada", "Tamil", "Telugu", "Bangla"]:
+            language_instruction = f"Respond in {request.language} language to match the input."
+        else:
+            language_instruction = "Respond in English."
         
-        Please provide a helpful response strategy for the sales agent to handle this objection effectively.
-        """
+        # Initialize Gemini chat with concise system message
+        chat = LlmChat(
+            api_key=os.environ.get('GEMINI_API_KEY'),
+            session_id=f"objection_{uuid.uuid4()}",
+            system_message=f"""You are a sales coach providing quick, actionable responses to sales objections.
+
+            RESPONSE FORMAT REQUIREMENTS:
+            1. Keep responses under 200 words
+            2. Be direct and practical
+            3. Provide 2-3 specific phrases the agent can use
+            4. {language_instruction}
+            5. Use simple, clear language
+            
+            Structure your response as:
+            **Quick Strategy:** [1-2 sentences]
+            **What to Say:** [2-3 specific phrases]
+            **Why This Works:** [1 sentence explanation]"""
+        ).with_model("gemini", "gemini-2.5-pro")
         
-        if scenario_used:
-            prompt += f"""
-            
-            Context: {scenario_used["context"]}
-            Suggested Approach: {scenario_used["suggested_response"]}
-            
-            Use this context to enhance your response.
-            """
+        # Create concise prompt for AI
+        prompt = f"""Handle this objection: "{request.objection_text}"
+        
+        Context: {scenario_used["context"] if scenario_used else "General sales objection"}
+        
+        Give a brief, practical response strategy."""
         
         user_message = UserMessage(text=prompt)
         ai_response = await chat.send_message(user_message)
