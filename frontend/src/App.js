@@ -27,9 +27,10 @@ function App() {
   const [currentPracticeIndex, setCurrentPracticeIndex] = useState(0);
   const [practiceResponse, setPracticeResponse] = useState('');
   const [practiceFeedback, setPracticeFeedback] = useState(null);
-  const [selectedLanguage, setSelectedLanguage] = useState('English');
+  const [practiceRecordedText, setPracticeRecordedText] = useState('');
+  const [practiceIsRecording, setPracticeIsRecording] = useState(false);
 
-  const recognitionRef = useRef(null);
+  const practiceRecognitionRef = useRef(null);
 
   const languages = [
     'English', 'Hindi', 'Hinglish', 'Marathi', 'Kannada', 'Tamil', 'Telugu', 'Bangla'
