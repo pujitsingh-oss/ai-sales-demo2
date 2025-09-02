@@ -459,12 +459,12 @@ function App() {
                   
                   <Button 
                     onClick={() => {
-                      console.log('Button clicked, selectedScenario:', selectedScenario); // Debug log
-                      if (selectedScenario) {
+                      console.log('Button clicked, selectedScenario:', selectedScenario);
+                      if (selectedScenario && selectedScenario.objection) {
                         handleObjection(selectedScenario.objection, selectedScenario.id);
                       }
                     }}
-                    disabled={!selectedScenario || loading}
+                    disabled={!selectedScenario || !selectedScenario.objection || loading}
                     className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50"
                   >
                     {loading ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : null}
