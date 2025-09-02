@@ -206,17 +206,34 @@ function App() {
       return;
     }
 
+    if (!practiceScenarios[currentPracticeIndex]) {
+      toast.error('No scenario selected');
+      return;
+    }
+
     setLoading(true);
+    setPracticeFeedback(null); // Clear previous feedback
+    
     try {
       const response = await axios.post(`${API}/practice/feedback`, {
         scenario_id: practiceScenarios[currentPracticeIndex].id,
-        user_response: practiceResponse,
+        user_response: practiceResponse.trim(),
         response_type: 'text'
       });
+      console.log('Practice feedback response:', response.data);
       setPracticeFeedback(response.data);
       toast.success('Feedback received!');
+      
+      // Scroll to feedback section after a short delay
+      setTimeout(() => {
+        const feedbackElement = document.querySelector('[data-feedback-section]');
+        if (feedbackElement) {
+          feedbackElement.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 500);
+      
     } catch (error) {
-      toast.error('Failed to get feedback');
+      toast.error('Failed to get feedback: ' + (error.response?.data?.detail || error.message));
       console.error(error);
     } finally {
       setLoading(false);
