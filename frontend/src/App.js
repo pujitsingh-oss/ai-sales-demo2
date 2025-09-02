@@ -361,7 +361,7 @@ function App() {
                   
                   <Button 
                     onClick={() => handleObjection(recordedText)}
-                    disabled={!recordedText || loading}
+                    disabled={!recordedText.trim() || loading}
                     className="w-full bg-green-600 hover:bg-green-700"
                   >
                     {loading ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : null}
@@ -370,10 +370,14 @@ function App() {
                 </TabsContent>
                 
                 <TabsContent value="preset" className="space-y-4">
-                  <Select value={selectedScenario?.id || ''} onValueChange={(value) => {
-                    const scenario = scenarios.find(s => s.id === parseInt(value));
-                    setSelectedScenario(scenario);
-                  }}>
+                  <Select 
+                    value={selectedScenario?.id?.toString() || ''} 
+                    onValueChange={(value) => {
+                      const scenario = scenarios.find(s => s.id === parseInt(value));
+                      setSelectedScenario(scenario);
+                      console.log('Selected scenario:', scenario); // Debug log
+                    }}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a scenario..." />
                     </SelectTrigger>
@@ -406,9 +410,14 @@ function App() {
                   )}
                   
                   <Button 
-                    onClick={() => handleObjection(selectedScenario?.objection, selectedScenario?.id)}
+                    onClick={() => {
+                      console.log('Button clicked, selectedScenario:', selectedScenario); // Debug log
+                      if (selectedScenario) {
+                        handleObjection(selectedScenario.objection, selectedScenario.id);
+                      }
+                    }}
                     disabled={!selectedScenario || loading}
-                    className="w-full bg-green-600 hover:bg-green-700"
+                    className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50"
                   >
                     {loading ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : null}
                     Get AI Response
@@ -429,7 +438,36 @@ function App() {
               {aiResponse ? (
                 <div className="bg-green-50 p-6 rounded-lg border-l-4 border-green-500">
                   <h4 className="font-medium text-green-900 mb-3">Suggested Response:</h4>
-                  <p className="text-green-800 leading-relaxed whitespace-pre-wrap">{aiResponse}</p>
+                  <div className="text-green-800 leading-relaxed prose prose-sm max-w-none">
+                    {aiResponse.split('\n').map((line, index) => {
+                      // Handle bold text
+                      if (line.includes('**')) {
+                        const parts = line.split('**');
+                        return (
+                          <p key={index} className="mb-2">
+                            {parts.map((part, partIndex) => 
+                              partIndex % 2 === 1 ? 
+                                <strong key={partIndex}>{part}</strong> : 
+                                part
+                            )}
+                          </p>
+                        );
+                      }
+                      // Handle bullet points
+                      if (line.trim().startsWith('-') || line.trim().startsWith('•')) {
+                        return (
+                          <li key={index} className="ml-4 mb-1 list-disc">
+                            {line.replace(/^[-•]\s*/, '')}
+                          </li>
+                        );
+                      }
+                      // Regular paragraphs
+                      if (line.trim()) {
+                        return <p key={index} className="mb-2">{line}</p>;
+                      }
+                      return null;
+                    })}
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-12 text-gray-500">
