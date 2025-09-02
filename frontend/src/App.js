@@ -577,13 +577,54 @@ function App() {
                   <CardTitle>Your Response</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <Textarea
-                    placeholder="How would you respond to this objection? Type your response here..."
-                    value={practiceResponse}
-                    onChange={(e) => setPracticeResponse(e.target.value)}
-                    rows={4}
-                    className="resize-none"
-                  />
+                  <Tabs defaultValue="text" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="text">Type Response</TabsTrigger>
+                      <TabsTrigger value="voice">Voice Recording</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="text" className="space-y-4">
+                      <Textarea
+                        placeholder="How would you respond to this objection? Type your response here..."
+                        value={practiceResponse}
+                        onChange={(e) => {
+                          e.preventDefault();
+                          setPracticeResponse(e.target.value);
+                        }}
+                        onFocus={(e) => e.target.style.outline = 'none'}
+                        onBlur={() => {}}
+                        rows={6}
+                        className="resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        style={{ outline: 'none' }}
+                      />
+                    </TabsContent>
+                    
+                    <TabsContent value="voice" className="space-y-4">
+                      <div className="text-center">
+                        <Button
+                          onClick={practiceIsRecording ? stopPracticeRecording : startPracticeRecording}
+                          size="lg"
+                          className={`w-24 h-24 rounded-full ${
+                            practiceIsRecording 
+                              ? 'bg-red-500 hover:bg-red-600' 
+                              : 'bg-blue-500 hover:bg-blue-600'
+                          } text-white transition-all duration-300`}
+                        >
+                          {practiceIsRecording ? <MicOff className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
+                        </Button>
+                        <p className="mt-2 text-sm text-gray-600">
+                          {practiceIsRecording ? 'Click to stop recording' : 'Click to start recording'}
+                        </p>
+                      </div>
+                      
+                      {practiceRecordedText && (
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <h4 className="font-medium text-gray-900 mb-2">Recorded Response:</h4>
+                          <p className="text-gray-700">{practiceRecordedText}</p>
+                        </div>
+                      )}
+                    </TabsContent>
+                  </Tabs>
                   
                   <Button 
                     onClick={handlePracticeFeedback}
@@ -611,7 +652,36 @@ function App() {
                   <CardContent className="space-y-4">
                     <div className="bg-blue-50 p-4 rounded-lg">
                       <h4 className="font-medium text-blue-900 mb-2">Feedback:</h4>
-                      <p className="text-blue-800">{practiceFeedback.feedback}</p>
+                      <div className="text-blue-800 prose prose-sm max-w-none">
+                        {practiceFeedback.feedback.split('\n').map((line, index) => {
+                          // Handle bold text
+                          if (line.includes('**')) {
+                            const parts = line.split('**');
+                            return (
+                              <p key={index} className="mb-2">
+                                {parts.map((part, partIndex) => 
+                                  partIndex % 2 === 1 ? 
+                                    <strong key={partIndex}>{part}</strong> : 
+                                    part
+                                )}
+                              </p>
+                            );
+                          }
+                          // Handle bullet points
+                          if (line.trim().startsWith('-') || line.trim().startsWith('•')) {
+                            return (
+                              <li key={index} className="ml-4 mb-1 list-disc">
+                                {line.replace(/^[-•]\s*/, '')}
+                              </li>
+                            );
+                          }
+                          // Regular paragraphs
+                          if (line.trim()) {
+                            return <p key={index} className="mb-2">{line}</p>;
+                          }
+                          return null;
+                        })}
+                      </div>
                     </div>
                     
                     {practiceFeedback.suggestions && practiceFeedback.suggestions.length > 0 && (
@@ -643,6 +713,7 @@ function App() {
                             fetchPracticeScenarios();
                             setPracticeFeedback(null);
                             setPracticeResponse('');
+                            setPracticeRecordedText('');
                           }}
                           variant="outline"
                         >
