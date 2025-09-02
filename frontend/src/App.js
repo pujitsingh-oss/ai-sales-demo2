@@ -467,12 +467,19 @@ function App() {
                   <Button 
                     onClick={() => {
                       console.log('Button clicked, selectedScenario:', selectedScenario);
+                      console.log('selectedScenario objection:', selectedScenario?.objection);
                       if (selectedScenario && selectedScenario.objection) {
                         handleObjection(selectedScenario.objection, selectedScenario.id);
+                      } else {
+                        toast.error('Please select a scenario first');
                       }
                     }}
                     disabled={!selectedScenario || !selectedScenario.objection || loading}
-                    className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50"
+                    className={`w-full ${
+                      selectedScenario && selectedScenario.objection 
+                        ? 'bg-green-600 hover:bg-green-700' 
+                        : 'bg-gray-400'
+                    } text-white disabled:opacity-50`}
                   >
                     {loading ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : null}
                     Get AI Response
