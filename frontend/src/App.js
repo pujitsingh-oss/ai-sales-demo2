@@ -669,12 +669,16 @@ function App() {
               </Card>
 
               {practiceFeedback && (
-                <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg mb-6">
+                <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg mb-6" data-feedback-section>
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                       <span>AI Feedback</span>
                       {practiceFeedback.score && (
-                        <Badge className="bg-blue-100 text-blue-800">
+                        <Badge className={`text-white ${
+                          practiceFeedback.score >= 8 ? 'bg-green-600' :
+                          practiceFeedback.score >= 6 ? 'bg-yellow-600' :
+                          'bg-red-600'
+                        }`}>
                           Score: {practiceFeedback.score}/10
                         </Badge>
                       )}
@@ -682,7 +686,7 @@ function App() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="bg-blue-50 p-4 rounded-lg">
-                      <h4 className="font-medium text-blue-900 mb-2">Feedback:</h4>
+                      <h4 className="font-medium text-blue-900 mb-3">Feedback:</h4>
                       <div className="text-blue-800 prose prose-sm max-w-none">
                         {practiceFeedback.feedback.split('\n').map((line, index) => {
                           // Handle bold text
@@ -692,7 +696,7 @@ function App() {
                               <p key={index} className="mb-2">
                                 {parts.map((part, partIndex) => 
                                   partIndex % 2 === 1 ? 
-                                    <strong key={partIndex}>{part}</strong> : 
+                                    <strong key={partIndex} className="font-semibold">{part}</strong> : 
                                     part
                                 )}
                               </p>
@@ -703,6 +707,14 @@ function App() {
                             return (
                               <li key={index} className="ml-4 mb-1 list-disc">
                                 {line.replace(/^[-•]\s*/, '')}
+                              </li>
+                            );
+                          }
+                          // Handle numbered lists
+                          if (/^\d+\./.test(line.trim())) {
+                            return (
+                              <li key={index} className="ml-4 mb-1 list-decimal">
+                                {line.replace(/^\d+\.\s*/, '')}
                               </li>
                             );
                           }
@@ -717,25 +729,27 @@ function App() {
                     
                     {practiceFeedback.suggestions && practiceFeedback.suggestions.length > 0 && (
                       <div>
-                        <h4 className="font-medium text-gray-900 mb-2">Suggestions for Improvement:</h4>
-                        <ul className="space-y-2">
+                        <h4 className="font-medium text-gray-900 mb-3">Key Improvements:</h4>
+                        <div className="space-y-3">
                           {practiceFeedback.suggestions.map((suggestion, index) => (
-                            <li key={index} className="flex items-start space-x-2">
-                              <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                              <span className="text-gray-700">{suggestion}</span>
-                            </li>
+                            <div key={index} className="flex items-start space-x-3 p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
+                              <div className="w-6 h-6 bg-yellow-400 text-white rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0">
+                                {index + 1}
+                              </div>
+                              <span className="text-gray-700 leading-relaxed">{suggestion}</span>
+                            </div>
                           ))}
-                        </ul>
+                        </div>
                       </div>
                     )}
                     
-                    <div className="flex space-x-4">
+                    <div className="flex space-x-4 pt-4">
                       <Button
                         onClick={nextPracticeScenario}
                         disabled={currentPracticeIndex >= practiceScenarios.length - 1}
                         className="bg-blue-600 hover:bg-blue-700"
                       >
-                        Next Scenario
+                        Next Scenario →
                       </Button>
                       
                       {currentPracticeIndex >= practiceScenarios.length - 1 && (
@@ -748,7 +762,7 @@ function App() {
                           }}
                           variant="outline"
                         >
-                          Start New Practice
+                          🔄 Start New Practice
                         </Button>
                       )}
                     </div>
